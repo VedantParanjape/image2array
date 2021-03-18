@@ -1,4 +1,5 @@
 from string import Template
+from more_itertools import grouper
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 import cairosvg
@@ -37,6 +38,13 @@ def ChangeColorDepth(iconIm):
 
     return None
     
+def SquashBits(grayscaleArrayFlat):
+    squashedArray = []
+    for bitLeftMost, bitLeftMiddle, bitRightMiddle, bitRightMost in grouper(4, grayscaleArrayFlat):
+        squashedArray.append(bitLeftMost << 6 | bitLeftMiddle << 4 | bitRightMiddle << 2 | bitRightMost)
+
+    return np.array(squashedArray)
+
 def StringifyArray(grayscaleArrayFlat):
     returnString = ""
     for i in grayscaleArrayFlat:
@@ -70,7 +78,7 @@ def Image2Array(fileName, outputFileName="ImageHeader", headerPath="../../UI/Wid
     '''
     grayscaleImage = ChangeColorDepth(LoadImage(fileName=fileName))
     grayscaleImageArray = np.asarray_chkfinite(grayscaleImage)
-    grayscaleImageArrayFlat = grayscaleImageArray.flatten()
+    grayscaleImageArrayFlat = SquashBits(grayscaleImageArray.flatten())
     grayscaleImageArrayFlatString = StringifyArray(grayscaleImageArrayFlat)
 
     outputString = templateString.substitute(
