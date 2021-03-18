@@ -44,7 +44,7 @@ def StringifyArray(grayscaleArrayFlat):
 
     return returnString[:-2]
 
-def ImageToArray(fileName, outputFileName="ImageHeader", headerPath="../../UI/Widgets/Icon.h", arrayName="ImageArray", templateString=templateString):
+def Image2Array(fileName, outputFileName="ImageHeader", headerPath="../../UI/Widgets/Icon.h", arrayName="ImageArray", templateString=templateString):
     '''
     Generates a C header file with image data converted into a array
 
@@ -53,7 +53,18 @@ def ImageToArray(fileName, outputFileName="ImageHeader", headerPath="../../UI/Wi
                     outputFileName (str): filename of generated header file
                     headerPath (str): path of header to be included
                     arrayName (str): name of the image array
-                    templateString (string.Template):
+                    templateString (string.Template): specify the template which the generated header file should use, default one specified below
+                    templateString = Template(
+                    """#ifndef $MACRO_GUARD
+                    #define $MACRO_GUARD
+
+                    #include "$ICON_HEADER_PATH"
+                        
+                    const Icon STATIC_SECTION $ARRAY_NAME = {$ICON_WIDTH, $ICON_HEIGHT, (const uint8_t[]){$ICON_DATA}};
+                        
+                    #endif"""
+                    ) 
+                    Necessary to use all the template substituents, their order can change in custom template string
             Returns:
                     None
     '''
@@ -83,5 +94,5 @@ if __name__ == "__main__":
     argParse.add_argument("--array_name", default="ImageArray", help="Specify the name of output array in header file", type=str)
     argsParsed = argParse.parse_args()
 
-    ImageToArray(argsParsed.input , argsParsed.output, argsParsed.header, argsParsed.array_name)
+    Image2Array(argsParsed.input , argsParsed.output, argsParsed.header, argsParsed.array_name)
     
