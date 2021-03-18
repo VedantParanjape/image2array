@@ -5,17 +5,7 @@ from PIL import Image, UnidentifiedImageError
 import cairosvg
 import numpy as np
 import argparse
-
-templateString = Template(
-"""#ifndef $MACRO_GUARD
-#define $MACRO_GUARD
-
-#include "$ICON_HEADER_PATH"
-    
-const Icon STATIC_SECTION $ARRAY_NAME = {$ICON_WIDTH, $ICON_HEIGHT, (const uint8_t[]){$ICON_DATA}};
-    
-#endif"""
-) 
+from Template import templateString
 
 def LoadImage(fileName):
     try:
@@ -40,7 +30,7 @@ def ChangeColorDepth(iconIm):
     
 def SquashBits(grayscaleArrayFlat):
     squashedArray = []
-    for bitLeftMost, bitLeftMiddle, bitRightMiddle, bitRightMost in grouper(4, grayscaleArrayFlat):
+    for bitLeftMost, bitLeftMiddle, bitRightMiddle, bitRightMost in grouper(4, grayscaleArrayFlat, 0):
         squashedArray.append(bitLeftMost << 6 | bitLeftMiddle << 4 | bitRightMiddle << 2 | bitRightMost)
 
     return np.array(squashedArray)
@@ -53,36 +43,13 @@ def StringifyArray(grayscaleArrayFlat):
     return returnString[:-2]
 
 def Image2Array(fileName, outputFileName="ImageHeader", headerPath="../../UI/Widgets/Icon.h", arrayName="ImageArray", templateString=templateString):
-    '''
-    Generates a C header file with image data converted into a array
-
-            Parameters:
-                    fileName (str): image file to be converted
-                    outputFileName (str): filename of generated header file
-                    headerPath (str): path of header to be included
-                    arrayName (str): name of the image array
-                    templateString (string.Template): specify the template which the generated header file should use, default one specified below
-                    templateString = Template(
-                    """#ifndef $MACRO_GUARD
-                    #define $MACRO_GUARD
-
-                    #include "$ICON_HEADER_PATH"
-                        
-                    const Icon STATIC_SECTION $ARRAY_NAME = {$ICON_WIDTH, $ICON_HEIGHT, (const uint8_t[]){$ICON_DATA}};
-                        
-                    #endif"""
-                    ) 
-                    Necessary to use all the template substituents, their order can change in custom template string
-            Returns:
-                    None
-    '''
     grayscaleImage = ChangeColorDepth(LoadImage(fileName=fileName))
     grayscaleImageArray = np.asarray_chkfinite(grayscaleImage)
     grayscaleImageArrayFlat = SquashBits(grayscaleImageArray.flatten())
     grayscaleImageArrayFlatString = StringifyArray(grayscaleImageArrayFlat)
 
     outputString = templateString.substitute(
-        MACRO_GUARD=outputFileName.upper() + "_H",
+        MACRO_GUARD=''.join(filter(str.isalpha, outputFileName.upper())) + "_H",
         ICON_HEADER_PATH=headerPath,
         ARRAY_NAME=arrayName,
         ICON_WIDTH=grayscaleImage.size[0],
